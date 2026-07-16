@@ -26,7 +26,7 @@ Our findings suggest that while the PR-level characteristics of AI slop are repo
 | Level | Finding |
 |---|---|
 | PR-level | No reliable, repository-general fingerprint; multivariate model explains only 6.4% of variance (Pseudo R² = 0.064) |
-| PR-level | Strongest raw effects (lexical diversity, body length, comment count) driven primarily by one repository (`flathub/flathub`, 42% of pairs) and vanish or weaken when excluded |
+| PR-level | Strongest raw effects (lexical diversity, body length, comment count) driven primarily by one repository (`flathub/flathub`, 43% of pairs) and vanish or weaken when excluded |
 | Author-level | Slop authors have newer accounts, fewer followers, lower merge ratios, and less prior history in the targeted repository |
 | Author-level | These differences are robust to sensitivity checks, including exclusion of the largest repository |
 | Labeling | Re-labeling using a blind codebook shows only fair agreement with maintainer labels overall (Cohen's Kappa = 0.25), varying from substantial to worse-than-chance across repositories |
@@ -50,7 +50,7 @@ Matching was performed greedily on temporal proximity and changed-file-count sim
 - **PR-level tests:** Mann-Whitney U tests (rank-biserial effect sizes) for continuous features; chi-squared tests (odds ratios) for binary features; Bonferroni-corrected; Kruskal-Wallis/Dunn for the three-way (slop/control/negative-control) comparison.
 - **Author-level tests:** Same approach applied to aggregated, first-appearance author-level features.
 - **Multivariate model:** Logistic regression with repository fixed effects predicting the slop label from eight PR-level features.
-- **Sensitivity checks:** Exclusion of `flathub/flathub` (42% of pairs), exclusion of the three largest repositories, and outlier-proportion analysis.
+- **Sensitivity checks:** Exclusion of `flathub/flathub` (43% of pairs), exclusion of the three largest repositories, and outlier-proportion analysis.
 - **Label validation:** Blind re-labeling of 200 stratified-sampled PRs against a seven-item codebook (Appendix A of the paper), compared to original maintainer labels via Cohen's Kappa.
 
 ## Codebook
@@ -61,7 +61,7 @@ The seven-item AI-slop identification checklist used for blind re-labeling is in
 
 - Label validation was performed by a single researcher.
 - The first author is a `pip` triager and closed a subset of the `pip` slop PRs in this sample; the codebook was formalized from the same heuristics used to apply those labels, so the `pip` subset (<1% of the dataset) should not be treated as independent validation.
-- `flathub/flathub` accounts for 42% of matched pairs and has distinctive labeling practices; results are reported with and without it.
+- `flathub/flathub` accounts for 43% of matched pairs and has distinctive labeling practices; results are reported with and without it.
 - The multivariate model explains only 6.4% of variance, suggesting slop labeling depends heavily on unobserved factors (maintainer judgment, diff content, context).
 - Analysis was restricted to repositories with 1,000+ stars, limiting generalizability to smaller or policy-less projects.
 - Lexical/textual features were not systematically stripped of template boilerplate, which may introduce noise.
