@@ -12,7 +12,7 @@ license: "CC-BY-4.0"
 date-released: "2026-07-16"
 version: "1.0.0"
 abstract: >
-	Open source maintainers increasingly report being overwhelmed by
+  Open source maintainers increasingly report being overwhelmed by
   AI-generated pull requests, prompting many repositories to adopt
   formal policies to manage the influx. Despite this, little is known
   about what characterizes these contributions or the accounts that
