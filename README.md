@@ -1,4 +1,5 @@
 # What Makes a Pull Request "AI Slop"? An Empirical Study of Maintainer Labels
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21389279.svg)](https://doi.org/10.5281/zenodo.21389279)
 
 This repository contains the data, code, and materials for an empirical study characterizing pull requests that open-source maintainers have explicitly labeled as "AI slop." The study analyzes 1,110 maintainer-labeled slop PRs matched against 1,110 control PRs, supplemented by 1,354 negative-control PRs, across 66 GitHub repositories.
 
@@ -70,14 +71,17 @@ See Section 5.3 of the paper for full details.
 
 ## Citation
 
-Citation metadata is provided in [`CITATION.cff`](CITATION.cff), which GitHub uses to generate a "Cite this repository" button automatically. You can also cite manually:
+Citation metadata is provided in [`CITATION.cff`](CITATION.cff), which GitHub uses to generate a "Cite this repository" button automatically. This work is also archived on Zenodo with a permanent DOI: [10.5281/zenodo.21389279](https://doi.org/10.5281/zenodo.21389279).
+
+You can also cite manually:
 
 ```bibtex
 @misc{rasouli_ai_slop,
   author       = {Rasouli, Sepehr},
   title        = {What Makes a Pull Request "AI Slop"? An Empirical Study of Maintainer Labels},
   year         = {2026},
-  howpublished = {\url{https://github.com/sepehr-rs/Characterizing-AI-slop}}
+  doi          = {10.5281/zenodo.21389279},
+  howpublished = {\url{https://doi.org/10.5281/zenodo.21389279}}
 }
 ```
 ## License

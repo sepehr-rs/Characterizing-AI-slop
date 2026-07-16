@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this dataset, code, or paper, please cite it as below."
 title: "What Makes a Pull Request \"AI Slop\"? An Empirical Study of Maintainer Labels"
-type: dataset
+type: article
 authors:
   - family-names: "Rasouli"
     given-names: "Sepehr"
@@ -30,7 +30,7 @@ keywords:
   - AI slop
   - GitHub
   - empirical software engineering
-# identifiers:
-#   - type: doi
-#     value: "10.5281/zenodo.XXXXXXX"
-#     description: "Zenodo archive of this repository"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.21389279"
+    description: "Zenodo archive of this repository"
