@@ -6,6 +6,7 @@ authors:
   - family-names: "Rasouli"
     given-names: "Sepehr"
     email: "sepehrrasouli.r@gmail.com"
+    orcid: "https://orcid.org/0009-0005-3784-7250"
 repository-code: "https://github.com/sepehr-rs/Characterizing-AI-slop"
 license: "CC-BY-4.0"
 date-released: "2026-07-16"
