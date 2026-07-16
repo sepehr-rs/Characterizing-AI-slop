@@ -1,0 +1,407 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs, graphicx}
+
+\title{What Makes a Pull Request "AI Slop"? An Empirical Study of Maintainer Labels}
+\author{Sepehr Rasouli\\
+	\texttt{sepehrrasouli.r@gmail.com}}
+\date{\today}
+\usepackage[hidelinks]{hyperref}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\newcommand{\rk}{${}^{*}$}
+\newcommand{\dg}{${}^{\dagger}$}
+\newcommand{\fb}{${}^{\ddagger}$}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+Open source maintainers increasingly report being overwhelmed by AI-generated pull requests, prompting many repositories to adopt formal policies to manage the influx. Despite this, little is known about what characterizes these contributions or the accounts that submit them. We set out to characterize AI-slop pull requests at both the PR and author levels. We collected 1,110 PRs that maintainers explicitly labeled as AI slop and matched them 1:1 with control PRs, closed, non-AI-labeled pull requests from the same repositories and time windows, across 66 repositories, supplemented by 1,354 additional PRs rejected for non-AI reasons (duplicate, invalid, or wontfix).
+
+At the PR level, we did not find a reliable fingerprint. Effect sizes were modest, varied substantially across repositories, and collectively explained only 6\% of the variance in which PRs received the slop label. The strongest PR-level signals, lexical diversity, body length, and comment count, were driven primarily by a single repository and did not generalize.
+
+At the author level, however, clear and robust patterns emerged. Slop authors operated accounts that were significantly newer (median 1,430 vs. 2,351 days), had far fewer followers (median 2 vs. 6), achieved substantially lower merge rates (33\% vs. 73\%), and were much less likely to have any prior contribution history in the repository they targeted (11\% vs. 26\%). These author-level differences held across all sensitivity checks, including the removal of the largest repository from the sample. Our findings suggest that while the PR-level characteristics of AI slop are repository-dependent, the type of contributor who submits AI slop is consistent: a newer, less established account with little connection to the project they are targeting.
+
+These results suggest that efforts to automatically detect AI-generated contributions should focus on who is submitting rather than what the submission looks like, and that the label "AI slop" itself carries different meanings across open source communities, complicating any standardized detection approach.
+\end{abstract}
+
+\section{Motivation}
+In recent years, maintainers of open source projects have experienced a growing influx of low-quality contributions, particularly those generated automatically with the assistance of large language models and minimal human review, commonly referred to as \emph{AI slop} \cite{baltes2026anendlessstreamai}. These contributions have increased frustration among maintainers, reduced their productivity, introduced various forms of harm to open source projects \cite{ gao2026autopilotempiricalstudyhumanai, watanabe2025use}, and made it more difficult for genuine newcomers, who now often have to put extra effort into demonstrating that their contributions are not AI slop \cite{ zhang2026augmentationdilutionlargescaleempirical}.
+
+In response, maintainers have adopted a variety of strategies. Many projects have introduced AI contribution policies \cite{hora2026aipolicydisclosurehuman}, updated their pull request templates, or even developed automated bots specifically designed to discourage or block such submissions. Despite these efforts, AI-generated contributions continue to become increasingly difficult to identify as language models improve at concealing their artificial origin \cite{ogenrwot2026patchtrackcomprehensiveanalysischatgpts, ogenrwot2026ai, hasan2026quietcontributionsinsightsaigenerated}. Part of this challenge stems from the lack of a clear and systematic understanding of the characteristics that distinguish AI-generated pull requests from ordinary contributions.
+
+Although these contributions often appear to follow recurring patterns, these heuristics remain largely anecdotal \cite{yoshioka2026letsmakepullrequest}. It is unclear whether the patterns observed by maintainers generalize across repositories, whether characteristics seen in one project also appear in others, or whether the observed patterns reflect genuine properties of AI-generated contributions rather than confirmation bias or simply the traits of low-quality pull requests in general.
+
+This report presents a systematic empirical characterization of pull requests labeled as ``AI slop'' by maintainers across 66 open source repositories. Rather than building a detection model, we aim to answer two research questions:
+
+\begin{description}
+	\item[RQ1:] What pull request-level characteristics are associated with maintainer-labeled AI-generated pull requests?
+	\item[RQ2:] How do contributor histories and participation patterns differ between AI-labeled and non-AI-labeled pull requests?
+\end{description}
+
+We hope our findings either validate or challenge the intuitions that many maintainers have developed through experience, while providing a data-driven foundation for future discussions on managing AI-generated contributions in open source communities.
+
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Dataset Construction}
+
+\subsubsection{Slop PR Collection}
+
+We queried the GitHub API for closed pull requests carrying any of the following labels: \texttt{AI Slop}, \texttt{AI spam}, \texttt{resolution: AI policy}, \texttt{ai-slop}, \texttt{ai-spam}, and \texttt{slop}.\footnote{GitHub's search API is case-insensitive.} This initial search returned 1,586 PRs across 73 repositories. After deduplication, 22 PRs appeared under multiple label variants (e.g., both \texttt{AI slop} and \texttt{ai-slop}), the labeled dataset comprised 1,380 unique slop PRs.
+
+\subsubsection{Control Group Matching}
+
+Prior to matching, we compiled a complete exclusion list of 762 unique slop authors and 4 known bot accounts (\texttt{dependabot}, \texttt{renovate}, \texttt{github-actions}, \texttt{allcontributors}) from the full labeled dataset. This exclusion was applied globally before sampling, not iteratively, to prevent slop authors from appearing in the control group through legitimate contributions to the same repositories.
+
+For each slop PR, we identified a matched control PR satisfying the following criteria: (1) from the same repository; (2) created within $\pm 90$ days of the slop PR; (3) closed without merging and carrying no AI-related label; (4) not authored by any contributor on the exclusion list; and (5) not authored by a known automated bot account. We intentionally matched against non-AI rejected PRs rather than merged PRs to isolate characteristics associated with the slop label from characteristics associated with rejection in general.
+
+Matching was performed greedily using a composite score minimizing temporal distance and difference in changed file count, weighted as $s = \Delta_{\text{days}} + 0.1 \cdot \Delta_{\text{files}}$. Each control PR was assigned to at most one slop PR. Of 1,380 slop PRs, 1,348 (97.7\%) were successfully matched. The 32 unmatched PRs were concentrated in repositories with thin control pools after author exclusion---specifically \texttt{freqtrade/freqtrade} ($n=17$) and \texttt{microg/GmsCore} ($n=13$).
+
+\subsubsection{Filtering and Re-Matching}
+
+We applied several filters that required re-running the matching procedure:
+
+\begin{itemize}
+	\item \textbf{Bot removal:} 198 PRs authored by \texttt{robobun} were removed from the slop dataset. Re-running matching recovered 166 new control matches, leaving 72 unmatched.
+	\item \textbf{Extended time window:} For the 72 unmatched PRs, we extended the matching window to $\pm 120$ days and fetched additional candidates. This recovered 18 more matches, leaving 34 still unmatched. Unmatched PRs were concentrated in \texttt{freqtrade/freqtrade} (13), \texttt{json-schema-org/json-schema-spec} (7), \texttt{microg/GmsCore} (6), and \texttt{photoprism/photoprism} (4).
+\end{itemize}
+
+We then applied additional quality filters:
+
+\begin{itemize}
+	\item \textbf{Repository quality:} Excluded PRs from repositories with fewer than 1,000 stars.
+	\item \textbf{Additional bots:} Removed PRs authored by \texttt{pre-commit.ci} and \texttt{imgbot}.
+	\item \textbf{Non-English content:} Removed 2 PRs from \texttt{QuantumNous/new-api} (the entire repository was in Chinese).
+	\item \textbf{Deleted accounts:} Removed PRs from accounts that no longer exist (\texttt{GTZX26}, \texttt{n8n-assistant}).
+\end{itemize}
+
+After removing unmatched PRs and loose ends, the final matched dataset comprised 1,110 slop PRs and 1,110 control PRs across 66 repositories, with 1,599 unique authors (734 slop authors, 856 control authors, with 9 authors appearing in both groups through legitimate contributions to different repositories).
+
+\subsubsection{Negative Controls}
+
+To distinguish characteristics specific to AI-slop labeling from characteristics common to all rejected PRs, we collected a third group of PRs from the same repositories labeled with non-AI rejection reasons: \texttt{duplicate}, \texttt{invalid}, \texttt{wontfix}, \texttt{stale}, \texttt{not-planned}, and related variants. These were excluded if authored by contributors in the slop dataset. After filtering out AI-adjacent labels that inadvertently appeared in the negative set (e.g., \texttt{ai-policy-violation}), 1,354 negative controls remained.
+
+\subsubsection{Data Collection}
+
+All data collection used the GitHub GraphQL and REST APIs between June 2025 and June 2026.
+The final dataset comprised 1,110 slop PRs, 1,110 matched control PRs, and 1,354 negative control PRs across 66 repositories, totaling 3,574 PRs from 1,599 unique authors.
+
+\subsection{Codebook Development}
+
+Our codebook for identifying AI-generated pull requests was developed from practitioner experience rather than derived from theory. The first author, as a triager of the \texttt{pip} project, had encountered AI-slop contributions and developed informal heuristics for recognizing them. These heuristics were formalized into a seven-item checklist available in Appendix A.
+
+\subsection{Label Validation}
+
+To assess whether maintainer-applied labels across 66 repositories were consistent with a documented standard, we performed a re-labeling procedure. We randomly sampled 200 PRs from the labeled dataset, stratified across repositories. The first author re-labeled each PR using only the codebook criteria, without access to the original maintainer labels, PR outcomes, or repository context beyond the PR body, title, and file diff.
+
+Overall agreement was fair (Cohen's Kappa = 0.25), but varied substantially across repositories, from substantial (\texttt{OrcaSlicer/OrcaSlicer}, Kappa = 0.67) to worse than chance (\texttt{apache/airflow}, Kappa = -0.29). The disagreement was concentrated in \texttt{flathub} (89 of 200 cases), where the label appeared to be applied broadly to low-effort contributions that disregarded repository conventions, a category that overlaps with, but is not identical to, AI-generated content. We do not interpret this as a labeling failure. Rather, it reflects that ``AI slop'' carries different operational meanings across communities. The codebook and confusion matrix will be made available on GitHub.
+\subsection{Feature Extraction}
+
+We extracted features at two levels: PR-level and author-level.
+
+\subsubsection{PR-Level Features}
+
+For all three groups, we retrieved each PR's title, body, timestamps, changed files, comments, and commits. From these we computed:
+
+\begin{itemize}
+	\item \textbf{Structural features:} title length, body length, presence of formulaic section headers, whether the body references an issue number, whether referenced issue numbers correspond to real issues in the same repository, time from PR creation to first maintainer response, and time from creation to closure.
+	
+	\item \textbf{Code features:} number of files changed, lines added and deleted, whether any modified files matched known test file path patterns, number of commits, whether any commits carried GPG or SSH signatures, and the proportion of commit messages matching generic patterns (e.g., ``update files,'' ``fix issue'').
+	
+	\item \textbf{Linguistic features:} lexical diversity measured using the Measure of Textual Lexical Diversity (MTLD), and the similarity between the PR body and the repository's PR template, measured as the proportion of template section headers appearing in the body.
+\end{itemize}
+
+For 178 PRs from repositories where maintainers overwrite the PR description after applying the AI-slop label (notably \texttt{oven-sh/bun} and \texttt{louislam/uptime-kuma}), the original body text was unavailable. These PRs were excluded from body-dependent feature analyses but retained for all other comparisons.
+
+\subsubsection{Author-Level Features}
+
+For each unique author, we reconstructed their GitHub contribution history using the GitHub Search API, restricted to PRs created before the author's first appearance in our dataset. We computed:
+
+\begin{itemize}
+	\item \textbf{Account characteristics:} account age at time of PR submission, presence of a profile picture, bio length, and whether a public email was listed.
+	
+	\item \textbf{Contribution history:} total PRs opened, number of distinct repositories contributed to, overall merge ratio (merged PRs / total closed PRs), prior rejection rate (PRs closed without merging / total closed PRs), spray score (distinct repositories / total PRs), and maximum PRs opened in any seven-day window (activity burst score).
+	
+	\item \textbf{Repository relationship:} whether the author had any prior merged or closed PR in the specific repository they targeted in our dataset.
+\end{itemize}
+
+Authors whose accounts had been deleted ($n = 2$) were excluded from author-level analysis. The final author-level dataset comprised 1,599 unique authors (734 slop authors, 856 control authors, with 9 authors appearing in both groups through legitimate contributions to different repositories).
+
+\subsection{Statistical Analysis}
+
+\subsubsection{Within-Repository Normalization}
+
+Repository culture is a major potential confound: a finding that ``slop PRs have shorter bodies'' may simply reflect that repositories which label slop also tend to receive shorter contributions generally. To address this, we computed within-repository z-scores for all continuous features by subtracting the repository median and dividing by the repository interquartile range. This transforms each feature from an absolute measure to a measure of how much a given PR deviates from its repository's norms, relative to other PRs in the same repository. All statistical tests were performed on these normalized values.
+
+\subsubsection{PR-Level Characteristics}
+
+For each continuous feature, we compared slop and control PRs using Mann-Whitney $U$ tests on the within-repository z-scores, reporting rank-biserial correlations as effect sizes. For binary features, we used chi-squared tests with odds ratios. We applied Bonferroni correction across all comparisons within each research question. We then repeated all tests on the three-way comparison of slop, control, and negative control PRs using Kruskal-Wallis tests with Dunn post-hoc comparisons.
+
+\subsubsection{Author-Level Characteristics}
+
+We aggregated PR-level data to the author level by taking each author's first appearance in our dataset, then compared slop and control authors on all author-level features using the same statistical approach (Mann-Whitney $U$ with rank-biserial correlation for continuous features, chi-squared with odds ratios for binary features, Bonferroni-corrected).
+
+\subsubsection{Multivariate Analysis}
+
+We fit a logistic regression model predicting the slop label from eight PR-level features with repository fixed effects, reporting odds ratios with 95\% confidence intervals. The model included lexical diversity, title length, body length, comment count, time to close, files changed, lines added, and commit count---all as within-repository z-scores.
+
+\subsubsection{Sensitivity Checks}
+
+We conducted three sensitivity analyses: (1) recomputing all PR-level tests excluding \texttt{flathub}, which contributed 43\% of our slop-control pairs; (2) recomputing the logistic regression excluding the three largest repositories; and (3) checking for outlier-driven effects by comparing the proportion of extreme values (beyond 3 IQR from group median) between groups.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Dataset Overview}
+\label{sec:dataset-overview}
+
+Repository sizes varied substantially across the 66 repositories in our dataset. One repository, \texttt{flathub/flathub}, contributed 43\% of all slop-control pairs (948 of 2,220). The next largest contributors were \texttt{apache/airflow} (88 pairs, 4\%) and \texttt{pandas-dev/pandas} (50 pairs, 2.2\%). This concentration informed our decision to conduct sensitivity analyses excluding \texttt{flathub} and re-checking the results.
+
+Body text was unavailable for 178 PRs (8.0\%) from repositories where maintainers overwrite the PR description after applying the AI-slop label; these PRs were excluded from text-based feature analyses but retained for all other comparisons.
+
+\subsection{RQ1: PR-Level Characteristics}
+\label{sec:rq1}
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=\linewidth]{pr_effect_sizes.pdf}
+	\caption{Effect sizes for PR-level features comparing slop and control pull requests. Red bars indicate statistically significant differences ($p < 0.05$), while gray bars indicate non-significant differences. Positive values indicate larger feature values for slop pull requests, and negative values indicate larger values for control pull requests.}
+	\label{fig:pr_effect_sizes}
+\end{figure}
+
+We compared slop and control PRs across eleven continuous features (using within-repository z-scores and Mann-Whitney $U$ tests) and binary features (using chi-squared tests), with Bonferroni correction applied across all comparisons.
+
+\subsubsection{Continuous Features}
+
+Seven of eleven continuous features showed significant differences between groups (Table~\ref{tab:rq1-continuous}). The largest effects were observed for time-to-close, comment count, and commit count: slop PRs remained open longer, received more maintainer comments, and contained more commits than matched controls. Text-based features showed more modest effects: slop PRs had lower lexical diversity, less generic commit messages, shorter titles, and longer bodies. The number of files changed and lines added or deleted did not differ between groups.
+
+\begin{table}[ht]
+	\centering
+	\caption{PR-level continuous features: slop vs.\ control (Mann-Whitney $U$ on within-repo z-scores)}
+	\label{tab:rq1-continuous}
+	\begin{tabular}{lrr}
+		\toprule
+		\textbf{Feature} & \textbf{Effect Size} & \textbf{Direction} \\
+		\midrule
+		Time to close *\ \ \,         & +0.23 & Slop stays open longer \\
+		Comment count *\ \ \,          & +0.22 & Slop gets more comments \\
+		Commit count *\ \ \,          & +0.21 & Slop has more commits \\
+		Lexical diversity *\ \ \,      & -0.16 & Slop has lower diversity \\
+		Generic commit ratio *\ \ \,  & -0.12 & Slop commits less generic \\
+		Title length *\ \ \,          & -0.12 & Slop has shorter titles \\
+		Body length *\ \ \,           & +0.12 & Slop has longer bodies \\
+		Time to first response $\dagger$\, & +0.08 & --- \\
+		Lines deleted             & +0.05 & --- \\
+		Lines added               & -0.02 & --- \\
+		Files changed             & $\sim 0$ & --- \\
+		\bottomrule
+		\multicolumn{3}{l}{\small * $p < 0.001$; $\dagger$ $p = 0.05$ (marginal); all $p$-values Bonferroni-corrected} \\
+	\end{tabular}
+\end{table}
+
+\subsubsection{Binary Features}
+
+Among the 1,955 PRs with available body text, slop PRs were significantly more likely to use formulaic section headers in their descriptions (44.9\% vs.\ 22.3\%; $\chi^2 = 112.4$, $p < 0.001$, OR = 2.68). No significant differences were observed for issue references, or commit signing.
+
+\subsubsection{Sensitivity to Repository Composition}
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=\linewidth]{sensitivity_flathub.pdf}
+	\caption{Sensitivity analysis for the Flathub dataset. The change in effect sizes show that the PR-level signals observed in the full dataset are driven primarily by \texttt{flathub} rather than representing the universal traits of AI-generated PRs.}
+	\label{fig:sensitivity_flathub}
+\end{figure}
+
+The lexical diversity effect varied substantially across repositories. Among 32 repositories with sufficient data for within-repo comparison, effect sizes ranged from $-0.93$ (\texttt{falconry/falcon}) to $+0.74$ (\texttt{OWASP/Nettacker}), with a mean of $-0.13$. The effect was negative (slop has lower diversity) in 18 repositories and positive in 12, indicating that even the direction of the lexical diversity difference is not universal.
+
+When we excluded \texttt{flathub}, which contributed 43\% of the data, most PR-level effects weakened or disappeared (Table~\ref{tab:sensitivity-flathub}). Only three features remained significant: time-to-close, title length, and commit count. Body length, lexical diversity, and comment count were no longer significant. This pattern indicates that the PR-level signals observed in the full dataset were driven primarily by \texttt{flathub}'s labeling practices rather than representing universal characteristics of AI-generated contributions.
+
+\begin{table}[ht]
+	\centering
+	\caption{Sensitivity analysis: PR-level features with and without \texttt{flathub}}
+	\label{tab:sensitivity-flathub}
+	\begin{tabular}{lcc}
+		\toprule
+		\textbf{Feature} & \textbf{All Repos (Effect)} & \textbf{Without flathub (Effect)} \\
+		\midrule
+		Time to close          & +0.23* & +0.17* \\
+		Comment count          & +0.22* & +0.07 \\
+		Commit count           & +0.21* & +0.11*  \\
+		Lexical diversity      & -0.16* & -0.05 \\
+		Title length           & -0.12* & -0.12*  \\
+		Body length            & +0.12* & -0.05 \\
+		\bottomrule
+		\multicolumn{3}{l}{\small * $p < 0.05$} \\
+	\end{tabular}
+\end{table}
+
+\subsubsection{Three-Way Comparison}
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=\linewidth]{three_way_boxplots.pdf}
+	\caption{Three-way comparison of repository-normalized pull request characteristics. Slop pull requests generally occupy an intermediate position between matched control pull requests and negative controls across comment count, time to close, and lexical diversity, indicating that slop PRs differ systematically from both groups.}
+	\label{fig:three_way_comparsion}
+\end{figure}
+
+Kruskal-Wallis tests comparing slop, control, and negative control PRs revealed significant differences across all three groups for nine of eleven continuous features (Table~\ref{tab:three-way}). The pattern of differences was informative: negative control PRs (explicitly rejected as duplicate, invalid, or wontfix) attracted the most maintainer comments and remained open the longest, consistent with maintainers deliberating over whether a submission was a duplicate or out of scope. Slop PRs received fewer comments than negative controls and were closed faster. Notably, slop PRs showed the highest lexical diversity of all three groups in this comparison, reflecting the influence of the large \texttt{flathub} subset.
+
+\begin{table}[ht]
+	\centering
+	\caption{Three-way comparison: slop vs.\ control vs.\ negative control (median z-scores)}
+	\label{tab:three-way}
+	\begin{tabular}{@{}lccc@{}}
+		\toprule
+		\textbf{Feature} & \textbf{Slop} & \textbf{Control} & \textbf{Negative} \\
+		\midrule
+		Time to close              & -0.03 & +0.06 & +0.20 \\
+		Comment count              & -0.09 & 0.00  & +0.17 \\
+		Lexical diversity          & +0.12 & -0.01 & -0.04 \\
+		Body length                & -0.09 & +0.01 & +0.02 \\
+		Title length               & +0.07 & -0.09 & 0.00  \\
+		Time to first response     & -0.01 & 0.00  & +0.03 \\
+		Lines added                & +0.01 & 0.00  & -0.01 \\
+		Generic commit ratio       & 0.00  & 0.00  & 0.00  \\
+		Commit count               & 0.00  & 0.00  & 0.00  \\
+		\bottomrule
+		\multicolumn{4}{@{}l}{\small All differences significant after Bonferroni correction ($p < 0.05$).} \\
+	\end{tabular}
+\end{table}
+\subsection{RQ2: Author-Level Characteristics}
+\label{sec:rq2}
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=\linewidth]{author_effects.pdf}
+	\caption{Effect sizes for author-level features comparing slop and control authors. Red bars indicate statistically significant differences after Bonferroni correction ($p < 0.05$), blue bars indicate differences that become significant only after excluding \texttt{flathub}, gray bars indicate marginal significance, and light gray bars indicate non-significant differences. Positive values indicate higher values for slop authors; negative values indicate higher values for control authors.}
+	\label{fig:author_effect_sizes}
+\end{figure}
+
+We compared 734 unique slop authors against 856 unique control authors across ten features. Unlike the PR-level results, author-level differences were robust to the exclusion of \texttt{flathub} and remained significant across sensitivity checks (Table~\ref{tab:rq2}).
+
+\subsubsection{Account Age and Social Capital}
+
+Slop authors operated significantly newer accounts than control authors (median 1,430 vs.\ 2,351 days; effect = +0.20, $p < 0.001$). They had substantially fewer followers (median 2 vs.\ 6; effect = +0.23, $p < 0.001$) and followed fewer accounts themselves (median 2 vs.\ 3; effect = +0.11, $p = 0.001$).
+
+\subsubsection{Contribution History}
+
+Slop authors had dramatically lower overall merge ratios: 33\% of their prior pull requests had been merged, compared to 73\% for control authors (effect = +0.20, $p < 0.001$). Only 10.8\% of slop authors had any prior contribution history in the repository they targeted, compared to 25.7\% of control authors (OR = 0.35, $p < 0.001$). Activity burst scores were marginally lower for slop authors (median 2 vs.\ 4 PRs per week; effect = +0.08, $p = 0.077$ after correction).
+
+\subsubsection{Profile Completeness}
+
+No significant differences were observed in bio length, public email presence (23.3\% vs.\ 25.7\%, $p = 1.0$), or number of public repositories (median 17 vs.\ 22, $p = 0.29$). Slop authors did not have conspicuously empty or incomplete profiles; their distinguishing characteristics were social and historical rather than cosmetic.
+
+\subsubsection{Sensitivity to Flathub Exclusion}
+
+When \texttt{flathub} was removed, author-level effects not only persisted but strengthened. Two additional effects emerged: slop authors had significantly higher spray scores (median 0.4 vs.\ 0.3; effect = +0.08, $p = 0.044$) and higher prior rejection rates (median 20\% vs.\ 10\%; effect = +0.11, $p = 0.004$). All previously significant effects remained significant, confirming that author-level characteristics are not artifacts of \texttt{flathub}'s particular contributor population.
+
+\begin{table}[ht]
+	\centering
+	\caption{Author-level features: slop vs.\ control authors}
+	\label{tab:rq2}
+	\begin{tabular}{@{}lccc@{}}
+		\toprule
+		\textbf{Feature} & \textbf{Slop Median} & \textbf{Control Median} & \textbf{Effect Size} \\
+		\midrule
+		Account age (days)       & 1,430 & 2,351 & +0.20\rk \\
+		Followers                & 2     & 6     & +0.23\rk \\
+		Overall merge ratio      & 33\%  & 73\%  & +0.20\rk \\
+		Prior repo history       & 10.8\% & 25.7\% & OR 0.35\rk \\
+		Following                & 2     & 3     & +0.11\rk \\
+		Activity burst score     & 2     & 4     & +0.08\dg \\
+		Spray score              & 0.4   & 0.3   & -0.08\fb \\
+		Prior rejection rate     & 0.2   & 0.1   & -0.11\fb \\
+		Public repos             & 17    & 22    & +0.06 \\
+		Public email             & 23\%  & 26\%  & OR 0.88 \\
+		\bottomrule
+		\multicolumn{4}{@{}l}{\small \rk\ $p < 0.05$ after Bonferroni correction (robust to flathub exclusion)} \\
+		\multicolumn{4}{@{}l}{\small \dg\ $p = 0.07$ after Bonferroni correction (marginal)} \\
+		\multicolumn{4}{@{}l}{\small \fb\ Significant only after flathub exclusion ($p < 0.05$)} \\
+	\end{tabular}
+\end{table}
+
+
+\subsection{Multivariate Analysis}
+\label{sec:multivariate}
+
+We fit a logistic regression model predicting the slop label from eight PR-level features with repository fixed effects on 1,905 PRs across 64 repositories. The model explained 6.4\% of the variance (McFadden's Pseudo $R^2 = 0.064$), indicating that repository identity dominates prediction and that PR-level features capture only modest additional signal.
+
+After controlling for repository effects, four features remained independently significant (Table~\ref{tab:logistic}). Higher lexical diversity was associated with increased odds of the slop label, a reversal from the bivariate comparison, where slop PRs showed lower diversity overall. This reversal reflects the influence of \texttt{flathub}: within that repository, slop PRs have distinctively high lexical diversity, and the fixed-effects model isolates this within-repo pattern. Longer title length also predicted slop. Higher comment counts were associated with substantially reduced odds, as was longer time-to-close, consistent with the three-way comparison finding that maintainers deliberate longer over explicitly rejected PRs than over slop. Body length, file count, lines added, and commit count were not significant predictors
+
+When the model was fit without \texttt{flathub} (1,003 PRs), lexical diversity was no longer significant (OR = 1.06, $p = 0.165$), while title length (OR = 1.35, $p < 0.001$), comment count (OR = 0.91, $p = 0.015$), and time-to-close (OR = 0.96, $p = 0.001$) remained predictive. The model without the three largest repositories yielded consistent results (Pseudo $R^2 = 0.064$).
+
+\begin{table}[ht]
+	\centering
+	\caption{Logistic regression: predictors of slop label (with repo fixed effects)}
+	\label{tab:logistic}
+	\begin{tabular}{lcc}
+		\toprule
+		\textbf{Feature} & \textbf{Odds Ratio} & \textbf{Interpretation} \\
+		\midrule
+		Title length (z)      & 1.29* & Longer title $\rightarrow$ higher odds of slop \\
+		Lexical diversity (z) & 1.26* & Higher diversity $\rightarrow$ higher odds of slop \\
+		Comment count (z)     & 0.73* & More comments $\rightarrow$ lower odds of slop \\
+		Time to close (z)     & 0.96*  & Longer open $\rightarrow$ slightly lower odds \\
+		\bottomrule
+		\multicolumn{3}{l}{\small Pseudo $R^2 = 0.064$; * $p < 0.05$} \\
+	\end{tabular}
+\end{table}
+
+\subsection{Outlier and Sensitivity Checks}
+\label{sec:outliers}
+
+Outlier analysis revealed that effects were not driven by extreme values. For lexical diversity, only 0.9\% of slop PRs and 1.5\% of control PRs exceeded 3 IQR from their group median. For body length, the proportions were 2.0\% and 3.9\%, respectively. The one exception was comment count, where 10.0\% of slop PRs were outliers compared to 2.0\% of controls, reflecting a subset of slop PRs that generated unusual amounts of discussion, consistent with the contested cases observed in our qualitative validation.
+
+
+\section{Discussion}
+\subsection{Summary of Findings}
+As reported in the Results, PR-level characteristics were repository-dependent. Specifically, after excluding flathub in the sensitivity analysis, many features that appeared significant in the full dataset weakened or disappeared entirely. Only time to close, title length, and commit count remained significant. This, combined with the fair agreement observed in the qualitative re-labeling (Cohen's Kappa = 0.25), suggests that the concept of "AI slop" varies across repositories and lacks a single consistent meaning. One repository may apply the label to any low-quality or inattentive contribution, while another may be considerably more conservative.
+
+The three-way comparison further supported this interpretation. Maintainers clearly distinguished slop PRs from both negative controls (duplicate, invalid, wontfix) and legitimate-but-rejected controls. Slop PRs received the fewest comments and were closed the fastest of the three groups, indicating that maintainers recognized and dispatched them quickly rather than deliberating over them as they did with explicitly rejected submissions. Notably, slop PRs also showed the highest lexical diversity among all three groups, further differentiating them from both legitimate and conventionally rejected contributions.
+
+In contrast, author-level characteristics were robust. The sensitivity analysis not only preserved the original effects but strengthened them and revealed new ones. After removing flathub, both spray score and prior rejection rate increased and became statistically significant, suggesting that the heterogeneity in flathub's labeled slop PRs may have partially masked these effects in the full dataset.
+
+\subsection{Implications}
+
+For maintainers, our findings suggest that author-level characteristics may provide more consistent signals than PR-level characteristics. Compared with matched controls, authors of slop PRs tended to have newer accounts, fewer followers, lower historical merge rates, and were less likely to have contributed previously to the repository they targeted. After excluding flathub, higher spray scores and higher prior rejection rates also became significant, suggesting that these differences may be obscured in repositories with more heterogeneous labeling practices.
+
+At the PR level, few characteristics were consistent across repositories. Only title length and commit count remained significant after sensitivity analyses, and their effect sizes were modest. Overall, our results suggest that PR-level characteristics are repository-dependent and are unlikely to provide a reliable basis for general detection.
+
+For researchers, the heterogeneity in labeling is itself an important finding. Agreement between our re-labeling and maintainer labels was low overall and varied substantially across repositories, indicating that "AI slop" does not have a single operational definition across open source communities. Instead, repositories appear to apply the label according to their own norms and expectations.
+
+This has implications for automated detection. A model trained on labels from one repository may not generalize well to another if repositories use the label differently. More broadly, our findings suggest that repository context plays a larger role in slop labeling than previously recognized, and that future work should account for this variation when developing or evaluating detection methods.
+
+\subsection{Limitations and Future Work}
+Several limitations should be considered. First, labeling validation was conducted by a single researcher; future work with multiple coders could establish a more robust measure of inter-rater reliability. 
+
+Second, the first author is a triager for the pip repository and closed a subset of the pip slop PRs included in this sample; as pip's labels were assigned using the same heuristics later formalized into the codebook, the pip subset should not be read as independent validation of the codebook. As pip contributes fewer than 1\% of PRs to the overall dataset, this is unlikely to materially affect aggregate results; it is disclosed here for transparency.
+
+Third, flathub accounts for 43\% of the matched pairs and differs markedly from other repositories in its labeling practices. While we reported results with and without flathub, its dominance means our findings may not fully represent the broader ecosystem. Future studies should collect a more balanced sample.
+
+Fourth, our multivariate model explained only 6.4\% of the variance (Pseudo R² = 0.064). This low explanatory power suggests that slop labeling is driven largely by unobservable factors—maintainer judgment, context, or diff content—rather than easily measurable PR features. This reinforces our interpretation that "AI slop" is a socially constructed, context-dependent label.
+
+Fifth, we restricted analysis to repositories with 1,000+ stars and documented AI policies, limiting generalizability to smaller or policy-less projects.
+
+Finally, textual features like lexical diversity were affected by repository templates and markdown artifacts. While we excluded PRs with edited bodies, we did not systematically strip templates, which likely introduced noise. Future work with cleaner text preprocessing could yield more precise estimates.
+
+
+\bibliography{bibfile}
+\bibliographystyle{plain}
+\appendix
+\section{Labeling Codebook}
+
+The following seven-item checklist was used for blind re-labeling during validation. A PR was classified as AI slop if it met two or more criteria.
+
+\begin{enumerate}
+	\item Uses formulaic section headers (e.g., ``Summary,'' ``Changes,'' ``Description,'' ``Testing,'' ``Checklist,'' ``Motivation'').
+	\item PR body does not match the repository's own PR template.
+	\item Mentions of the PR being created with the help of AI (e.g., ``Generated with Claude Code'').
+	\item PR lacks a linked issue number or any reference to prior discussion in the repository (if applicable).
+	\item Body (or author comments visible in the PR) describes features, fixes, or motivations that are not supported by the actual diff or files changed.
+	\item Modifies files that have no clear relationship to the claimed change or any referenced issue.
+	\item Author's comment responses contain factually incorrect claims that contradict the diff (e.g., describing non-existent changes, referencing functions not in the codebase).
+\end{enumerate}
+
+\noindent Threshold: $\geq 2$ criteria met $\rightarrow$ classified as AI slop.
+\end{document}
