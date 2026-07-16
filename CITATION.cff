@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use this dataset, code, or paper, please cite it as below."
+title: "What Makes a Pull Request \"AI Slop\"? An Empirical Study of Maintainer Labels"
+type: dataset
+authors:
+  - family-names: "Rasouli"
+    given-names: "Sepehr"
+    email: "sepehrrasouli.r@gmail.com"
+repository-code: "https://github.com/sepehr-rs/Characterizing-AI-slop"
+license: "CC-BY-4.0"
+date-released: "2026-07-16"
+version: "1.0.0"
+abstract: >
+	Open source maintainers increasingly report being overwhelmed by
+  AI-generated pull requests, prompting many repositories to adopt
+  formal policies to manage the influx. Despite this, little is known
+  about what characterizes these contributions or the accounts that
+  submit them. We set out to characterize AI-slop pull requests at
+  both the PR and author levels. We collected 1,110 PRs that
+  maintainers explicitly labeled as AI slop and matched them 1:1
+  with control PRs, closed, non-AI-labeled pull requests from the
+  same repositories and time windows, across 66 repositories,
+  supplemented by 1,354 additional PRs rejected for non-AI reasons
+  (duplicate, invalid, or wontfix).
+keywords:
+  - open source
+  - pull requests
+  - AI-generated content
+  - AI slop
+  - GitHub
+  - empirical software engineering
+# identifiers:
+#   - type: doi
+#     value: "10.5281/zenodo.XXXXXXX"
+#     description: "Zenodo archive of this repository"
